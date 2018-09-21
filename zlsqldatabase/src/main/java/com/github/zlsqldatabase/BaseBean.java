@@ -9,6 +9,7 @@ import android.util.Log;
 import com.github.zlsqldatabase.Annotation.dbField;
 import com.github.zlsqldatabase.Annotation.dbTable;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class BaseBean<T> implements IBaseBean<T> {
                 return false;
             }
             String createTable = "create table if not exists "+tableName+"(";
-            Field []fields = entityClass.getFields();
+            Field []fields = entityClass.getDeclaredFields();
             for (int i=0; i<fields.length; i++ ) {
                 Field field = fields[i];
                 field.setAccessible(true);
@@ -51,10 +52,23 @@ public class BaseBean<T> implements IBaseBean<T> {
                         str = field.getName();
                         createTable += str;
                     }
-                    if (field.getAnnotation(dbField.class)!=null) {
-                        createTable += " varchar("+field.getAnnotation(dbField.class).fieldLength()+")";
-                    } else {
-                        createTable+=" varchar(100)";
+                    Class type = field.getType();
+                    if (type == String.class) {
+                        if (field.getAnnotation(dbField.class)!=null) {
+                            createTable += " varchar("+field.getAnnotation(dbField.class).fieldLength()+")";
+                        } else {
+                            createTable+=" varchar(100)";
+                        }
+                    } else if (type == Double.class) {
+                        createTable += " double";
+                    } else if (type == Integer.class) {
+                        createTable += " int";
+                    } else if (type == float.class) {
+                        createTable += " float";
+                    } else if (type == byte[].class) {
+                        createTable += " binary";
+                    } else if (type == Long.class) {
+                        createTable += " long";
                     }
                 }
                 if (i==fields.length-1) {

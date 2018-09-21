@@ -4,10 +4,10 @@ import com.github.zlsqldatabase.Annotation.dbField;
 
 public class User {
     @dbField(fieldName = "name", fieldLength = 30)
-    public String name;
+    private String name;
 
     @dbField(fieldName = "password", fieldLength = 20)
-    public String password;
+    private String password;
 
     public User() {
         super();

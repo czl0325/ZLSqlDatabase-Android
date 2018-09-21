@@ -1,5 +1,7 @@
 package com.github.zlsqldatabase;
 
+import java.util.List;
+
 public interface IBaseBean<T> {
     /**
      * 插入数据
@@ -12,5 +14,7 @@ public interface IBaseBean<T> {
 
     public int update(T entity, T where);
 
-    public int getTotalCount();
+    public List<T> query(T where);
+
+    public List<T> query(T where, String orderBy, Integer startIndex, Integer limit);
 }

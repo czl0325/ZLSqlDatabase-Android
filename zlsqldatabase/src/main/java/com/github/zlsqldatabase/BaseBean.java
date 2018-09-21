@@ -4,13 +4,16 @@ package com.github.zlsqldatabase;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.github.zlsqldatabase.Annotation.dbField;
 import com.github.zlsqldatabase.Annotation.dbTable;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -129,15 +132,32 @@ public class BaseBean<T> implements IBaseBean<T> {
 
     @Override
     public int update(T entity, T where) {
-        //sqLiteDatabase.
-        return 0;
+        Map value = getValue(entity);
+        Map whereClause = getValue(where);
+        Condition condition = new Condition(whereClause);
+        ContentValues contentValues = getContentValue(value);
+        return sqLiteDatabase.update(tableName, contentValues, condition.getWhereClause(),
+                condition.getWhereArgs());
     }
 
     @Override
-    public int getTotalCount() {
-        String sql = "select count(*) from "+tableName;
-        Cursor cursor = sqLiteDatabase.rawQuery(sql, null);
-        return cursor.getCount();
+    public List<T> query(T where) {
+        return query(where, null, null, null);
+    }
+
+    @Override
+    public List<T> query(T where, String orderBy, Integer startIndex, Integer limit) {
+        Map map = getValue(where);
+        String limitString = null;
+        if (startIndex != null && limit != null) {
+            limitString = startIndex+" , "+limit;
+        }
+        Condition condition = new Condition(map);
+        Cursor cursor = sqLiteDatabase.query(tableName, null, condition.getWhereClause(),
+                condition.getWhereArgs(), null, null, orderBy, limitString);
+        List<T> result = getResult(cursor, where);
+        cursor.close();
+        return result;
     }
 
 
@@ -178,5 +198,50 @@ public class BaseBean<T> implements IBaseBean<T> {
             }
         }
         return contentValues;
+    }
+
+    private List<T> getResult(Cursor cursor, T where) {
+        ArrayList list = new ArrayList();
+        Object item = null;
+        if (cursor.moveToFirst()) {
+            do {
+                try {
+                    item = where.getClass().newInstance();
+                    Iterator iterator = cacheMap.entrySet().iterator();
+                    while (iterator.hasNext()) {
+                        Map.Entry entry = (Map.Entry) iterator.next();
+                        //得到列名
+                        String columnName = (String) entry.getKey();
+                        //然后以列名拿到  列名在游标的位子
+                        Integer columnIndex = cursor.getColumnIndex(columnName);
+                        Field field = (Field) entry.getValue();
+                        Class type = field.getType();
+                        if (columnIndex != -1) {
+                            if (type == String.class) {
+                                field.set(item, cursor.getString(columnIndex));
+                            } else if (type == Integer.class) {
+                                field.set(item, cursor.getInt(columnIndex));
+                            } else if (type == Long.class) {
+                                field.set(item, cursor.getLong(columnIndex));
+                            } else if (type == Double.class) {
+                                field.set(item, cursor.getDouble(columnIndex));
+                            } else if (type == byte[].class) {
+                                field.set(item, cursor.getBlob(columnIndex));
+                            } else if (type == float.class) {
+                                field.set(item, cursor.getFloat(columnIndex));
+                            } else {
+                                Log.e("SQL","不支持该类型!");
+                            }
+                        }
+                    }
+                    list.add(item);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InstantiationException e) {
+                    e.printStackTrace();
+                }
+            } while (cursor.moveToNext());
+        }
+        return list;
     }
 }

@@ -29,4 +29,10 @@
         android:text="更新数据"
         android:onClick="updateUser"/>
 
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="查询数据"
+        android:onClick="queryUser"/>
+
 </LinearLayout>

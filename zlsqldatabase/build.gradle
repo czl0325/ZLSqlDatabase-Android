@@ -58,10 +58,10 @@ task javadoc(type: Javadoc) {
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
     options.encoding"UTF-8"
     options.charSet'UTF-8'
-    options.authortrue
-    options.versiontrue
-    options.links"https://github.com/czl0325/ZLSqlDatabase-Android/blob/master/README.md"
-    failOnErrorfalse
+    options.author true
+    options.version true
+    options.links "https://github.com/czl0325/ZLSqlDatabase-Android/blob/master/README.md"
+    failOnError false
 }
 
 //文档打包成jar
@@ -77,8 +77,8 @@ task copyDoc(type: Copy) {
 
 //上传到jcenter所需要的源码文件
 artifacts {
-    archivesjavadocJar
-    archivessourcesJar
+    archives javadocJar
+    archives sourcesJar
 }
 
 // 配置maven库，生成POM.xml文件

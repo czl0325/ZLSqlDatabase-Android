@@ -4,7 +4,7 @@
 ### 支持implementation导入
 
 ```
-implementation 'com.github.czl0325:zlsqldatabase:1.0.0'
+implementation 'com.github.czl0325:zlsqldatabase:1.1.0'
 ```
 
 ### 说明

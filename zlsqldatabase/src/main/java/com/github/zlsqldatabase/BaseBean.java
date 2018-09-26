@@ -1,6 +1,7 @@
 package com.github.zlsqldatabase;
 
 
+import android.app.ApplicationErrorReport;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -11,6 +12,8 @@ import com.github.zlsqldatabase.Annotation.dbTable;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.nio.channels.ClosedSelectorException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,7 +60,7 @@ public class BaseBean<T> implements IBaseBean<T> {
                         if (field.getAnnotation(dbField.class)!=null) {
                             createTable += " varchar("+field.getAnnotation(dbField.class).fieldLength()+")";
                         } else {
-                            createTable+=" varchar(100)";
+                            createTable+=" TEXT";
                         }
                     } else if (type == Double.class) {
                         createTable += " double";
@@ -99,7 +102,7 @@ public class BaseBean<T> implements IBaseBean<T> {
             //表的列名数组
             String[] columnNames = cursor.getColumnNames();
             //拿到Filed数组
-            Field[] columnFields = entityClass.getFields();
+            Field[] columnFields = entityClass.getDeclaredFields();
             for (Field field:columnFields) {
                 field.setAccessible(true);
             }
@@ -172,6 +175,127 @@ public class BaseBean<T> implements IBaseBean<T> {
         List<T> result = getResult(cursor, where);
         cursor.close();
         return result;
+    }
+
+    @Override
+    public void closeDB() {
+        sqLiteDatabase.close();
+    }
+
+    @Override
+    public boolean checkUpdateTable(T t) {
+        Field []fields = t.getClass().getDeclaredFields();
+        boolean canUpdate = false;
+        String tableTemp = tableName + "_temp";
+        String createTable = "create table if not exists "+tableName+"(";
+        String oldValue = "(";
+        String newValue = "";
+        if (fields.length > 0) {
+            for (int i=0; i<fields.length; i++) {
+                Field field = fields[i];
+                field.setAccessible(true);
+                String str = null;
+                if (!(field.getName().equals("$change")
+                        || field.getName().equals("serialVersionUID"))) {
+                    if (!cacheMap.containsKey(field.getName())) {
+                        canUpdate = true;
+                    }
+                    if (field.getAnnotation(dbField.class)!=null) {
+                        str = field.getAnnotation(dbField.class).fieldName();
+                        createTable += str;
+                        if (cacheMap.containsKey(field.getName())) {
+                            oldValue += str;
+                            newValue += str;
+                        } else {
+                            Class type = field.getType();
+                            if (type == String.class) {
+                                oldValue += str;
+                                newValue += "\"\"";
+                            } else {
+                                oldValue += str;
+                                newValue += "0";
+                            }
+                        }
+                    } else {
+                        str = field.getName();
+                        createTable += str;
+                        if (cacheMap.containsKey(field.getName())) {
+                            oldValue += str;
+                            newValue += str;
+                        } else {
+                            Class type = field.getType();
+                            if (type == String.class) {
+                                oldValue += str;
+                                newValue += "\" \"";
+                            } else {
+                                oldValue += str;
+                                newValue += "0";
+                            }
+                        }
+                    }
+                    Class type = field.getType();
+                    if (type == String.class) {
+                        if (field.getAnnotation(dbField.class)!=null) {
+                            createTable += " varchar("+field.getAnnotation(dbField.class).fieldLength()+")";
+                        } else {
+                            createTable+=" TEXT";
+                        }
+                    } else if (type == Double.class) {
+                        createTable += " double";
+                    } else if (type == Integer.class) {
+                        createTable += " Integer";
+                    } else if (type == int.class) {
+                        createTable += " int";
+                    } else if (type == float.class) {
+                        createTable += " float";
+                    } else if (type == byte[].class) {
+                        createTable += " binary";
+                    } else if (type == Long.class) {
+                        createTable += " long";
+                    }
+                }
+                if (i==fields.length-1) {
+                    while (createTable.endsWith(",")) {
+                        createTable = createTable.substring(0, createTable.length()-1);
+                    }
+                    while (oldValue.endsWith(",")) {
+                        oldValue = oldValue.substring(0, oldValue.length()-1);
+                    }
+                    while (newValue.endsWith(",")) {
+                        newValue = newValue.substring(0, newValue.length()-1);
+                    }
+                    createTable+=")";
+                    oldValue+=")";
+                } else {
+                    if (str != null) {
+                        createTable+=",";
+                        oldValue+=",";
+                        newValue+=",";
+                    }
+                }
+            }
+        }
+        if (canUpdate == false) {
+            return false;
+        }
+
+        String insertOldTable = "insert into "+tableName+" "+oldValue+" select "
+                + newValue +" from "+tableTemp;
+        Log.e("czl",insertOldTable);
+        String createBakTable = "alter table "+ tableName + " rename to "+
+                tableTemp;
+        sqLiteDatabase.execSQL(createBakTable);
+        sqLiteDatabase.execSQL(createTable);
+        //String sq = "insert into User(name, password, age) select name, password, 0 from User_temp";
+        sqLiteDatabase.execSQL(insertOldTable);
+        String delDB = "drop table if exists "+tableTemp;
+        sqLiteDatabase.execSQL(delDB);
+        return canUpdate;
+    }
+
+    @Override
+    public void exeute(String sql) {
+        sqLiteDatabase.execSQL(sql);
     }
 
 

@@ -9,6 +9,9 @@ public class User {
     @dbField(fieldName = "password", fieldLength = 20)
     private String password;
 
+    private int age;
+    private String school;
+
     public User() {
         super();
     }
@@ -29,6 +32,22 @@ public class User {
 
     @Override
     public String toString() {
-        return "name="+name+",password="+password;
+        return "name="+name+",password="+password+",age="+age+",school="+school;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getSchool() {
+        return school;
+    }
+
+    public void setSchool(String school) {
+        this.school = school;
     }
 }

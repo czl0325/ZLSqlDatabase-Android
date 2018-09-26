@@ -17,4 +17,10 @@ public interface IBaseBean<T> {
     public List<T> query(T where);
 
     public List<T> query(T where, String orderBy, Integer startIndex, Integer limit);
+
+    public void closeDB();
+
+    public boolean checkUpdateTable(T t);
+
+    public void exeute(String sql);
 }

@@ -22,9 +22,9 @@ public class MainActivity extends AppCompatActivity {
     public void insert(View view) {
         for (int i=0; i<10; i++) {
             User user = new User("陈昭良","123456");
-            userBean.insert(user);
+            Long result = userBean.insert(user);
+            Log.e("czl",""+result);
         }
-        Log.e("czl","插入完成");
     }
 
     public void deleteUser(View view) {
@@ -50,11 +50,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void queryUser(View view) {
         User user = new User();
-        user.setPassword("1");
         List<User> list = userBean.query(user);
         Log.e("czl","共查询到 "+list.size()+" 条数据!");
         for (User u:list) {
             Log.e("czl",u.toString());
         }
+    }
+
+    public void updateDB(View view) {
+        Log.e("czl",""+userBean.checkUpdateTable(new User()));
     }
 }
